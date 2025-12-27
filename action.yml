@@ -54,17 +54,16 @@ runs:
       uses: addnab/docker-run-action@v3
       with:
         image: odoo:${{ inputs.odoo_version }}
-        options: |
+        options: >-
           --user root
           -v ${{ github.workspace }}:/mnt/extra-addons
           --network odoo-test-network
-        env:
-          HOST: db-postgres
-          USER: odoo
-          PASSWORD: odoo
-          INPUT_MODULES: ${{ inputs.modules }}
-          INPUT_TAGS: ${{ inputs.test_tags }}
-          INPUT_QLTY_COVERAGE_TOKEN: ${{ inputs.qlty_coverage_token }}
+          -e HOST=db-postgres
+          -e USER=odoo
+          -e PASSWORD=odoo
+          -e INPUT_MODULES=${{ inputs.modules }}
+          -e INPUT_TAGS=${{ inputs.test_tags }}
+          -e INPUT_QLTY_COVERAGE_TOKEN=${{ inputs.qlty_coverage_token }}
         run: |
           # Instalar coverage
           if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then pip install coverage; fi
