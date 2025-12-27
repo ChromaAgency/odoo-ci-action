@@ -72,14 +72,14 @@ runs:
           TAGS_FLAG=""
           if [ -n "$INPUT_TAGS" ]; then TAGS_FLAG="--test-tags=$INPUT_TAGS"; fi
 
-          # Definir comando base
-          CMD="odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test"
+          # Definir comando base con parámetros de DB
+          CMD="odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo"
 
           # Si hay ID de Code Climate, envolvemos con coverage
           if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then
              echo "🧪 Corriendo con Coverage..."
              # --source=/mnt/extra-addons asegura que solo mida tu código
-             python3 -m coverage run --source=/mnt/extra-addons --omit=*/__manifest__.py,*/tests/* /usr/bin/odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test
+             python3 -m coverage run --source=/mnt/extra-addons --omit=*/__manifest__.py,*/tests/* /usr/bin/odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo
              
              # Generar XML dentro del volumen montado
              python3 -m coverage xml -o /mnt/extra-addons/coverage.xml
