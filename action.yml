@@ -85,6 +85,8 @@ runs:
           -e INPUT_TAGS=${{ inputs.test_tags }}
           -e INPUT_QLTY_COVERAGE_TOKEN=${{ inputs.qlty_coverage_token }}
         run: |
+          set -e  # Exit immediately if any command fails
+          
           # Instalar coverage
           if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then pip install coverage --break-system-packages; fi
 
@@ -101,13 +103,13 @@ runs:
 
           # Si hay ID de Code Climate, envolvemos con coverage
           if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then
-             echo "🧪 Corriendo con Coverage..."
-             python3 -m coverage run --source=/mnt/extra-addons --omit=*/__manifest__.py,*/tests/* /usr/bin/odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo --addons-path=$ADDONS_PATH
-             
-             python3 -m coverage xml -o /mnt/extra-addons/coverage.xml
+            echo "🧪 Corriendo con Coverage..."
+            python3 -m coverage run --source=/mnt/extra-addons --omit=*/__manifest__.py,*/tests/* /usr/bin/odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo --addons-path=$ADDONS_PATH
+            
+            python3 -m coverage xml -o /mnt/extra-addons/coverage.xml
           else
-             echo "🚀 Corriendo sin Coverage..."
-             $CMD
+            echo "🚀 Corriendo sin Coverage..."
+            $CMD
           fi
 
     # 4. Subir a Code Climate (Desde el Host)
