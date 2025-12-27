@@ -19,24 +19,16 @@ inputs:
     required: false
     default: ''
   # INPUT PARA CODE CLIMATE
-  cc_reporter_id:
-    description: 'ID del Reporter de Code Climate (CC_TEST_REPORTER_ID)'
+  qlty_coverage_token:
+    description: 'Token de Code Climate para reportar coverage'
     required: false
     default: ''
 
 runs:
   using: "composite"
   steps:
-    # 1. Preparar Code Climate (Descargar binario)
-    - name: Setup Code Climate
-      if: ${{ inputs.cc_reporter_id != '' }}
-      shell: bash
-      run: |
-        curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-        chmod +x ./cc-test-reporter
-        ./cc-test-reporter before-build
 
-    # 2. Infraestructura (Red + DB)
+    # 1. Infraestructura (Red + DB)
     - name: Crear red Docker
       shell: bash
       run: docker network create odoo-test-network || true
@@ -57,7 +49,7 @@ runs:
       shell: bash
       run: chmod -R 777 .
 
-    # 3. Ejecutar Tests (Generando coverage.xml)
+    # 2. Ejecutar Tests (Generando coverage.xml)
     - name: Ejecutar Tests Odoo
       uses: addnab/docker-run-action@v3
       with:
@@ -72,10 +64,10 @@ runs:
           PASSWORD: odoo
           INPUT_MODULES: ${{ inputs.modules }}
           INPUT_TAGS: ${{ inputs.test_tags }}
-          INPUT_CC_ID: ${{ inputs.cc_reporter_id }}
+          INPUT_QLTY_COVERAGE_TOKEN: ${{ inputs.qlty_coverage_token }}
         run: |
           # Instalar coverage
-          if [ -n "$INPUT_CC_ID" ]; then pip install coverage; fi
+          if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then pip install coverage; fi
 
           # Preparar Tags
           TAGS_FLAG=""
@@ -85,7 +77,7 @@ runs:
           CMD="odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test"
 
           # Si hay ID de Code Climate, envolvemos con coverage
-          if [ -n "$INPUT_CC_ID" ]; then
+          if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then
              echo "🧪 Corriendo con Coverage..."
              # --source=/mnt/extra-addons asegura que solo mida tu código
              python3 -m coverage run --source=/mnt/extra-addons --omit=*/__manifest__.py,*/tests/* /usr/bin/odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test
@@ -99,16 +91,8 @@ runs:
 
     # 4. Subir a Code Climate (Desde el Host)
     - name: Upload to Code Climate
-      if: ${{ inputs.cc_reporter_id != '' }}
-      shell: bash
-      env:
-        CC_TEST_REPORTER_ID: ${{ inputs.cc_reporter_id }}
-      run: |
-        echo "🔧 Ajustando rutas en coverage.xml..."
-        # IMPORTANTE: Reemplazamos la ruta de Docker (/mnt/extra-addons/) por nada
-        # para que coincida con la ruta relativa del repo en GitHub.
-        sed -i 's|/mnt/extra-addons/||g' coverage.xml
-
-        echo "📤 Subiendo reporte..."
-        ./cc-test-reporter format-coverage -t coverage.py coverage.xml
-        ./cc-test-reporter upload-coverage
+      if: ${{ inputs.qlty_coverage_token != '' }}
+      uses: qltysh/qlty-action/coverage@v2
+      with:
+        token: ${{ inputs.qlty_coverage_token }}
+        files: target/lcov.info
