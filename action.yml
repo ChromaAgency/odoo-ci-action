@@ -66,7 +66,7 @@ runs:
           -e INPUT_QLTY_COVERAGE_TOKEN=${{ inputs.qlty_coverage_token }}
         run: |
           # Instalar coverage
-          if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then pip install coverage; fi
+          if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then pip install coverage --break-system-packages; fi
 
           # Preparar Tags
           TAGS_FLAG=""
