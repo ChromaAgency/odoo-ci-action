@@ -18,6 +18,11 @@ inputs:
     description: 'Tags de test opcionales'
     required: false
     default: ''
+  # NUEVOS INPUTS PARA ENTERPRISE
+  github_token:
+    description: 'GitHub Token con acceso a odoo/enterprise'
+    required: false
+    default: ''
   # INPUT PARA CODE CLIMATE
   qlty_coverage_token:
     description: 'Token de Code Climate para reportar coverage'
@@ -32,6 +37,15 @@ runs:
     - name: Crear red Docker
       shell: bash
       run: docker network create odoo-test-network || true
+
+    # NUEVO: Clonar Odoo Enterprise
+    - name: Clonar Odoo Enterprise
+      if: ${{ inputs.github_token != '' }}
+      shell: bash
+      run: |
+        git clone --depth 1 --branch ${{ inputs.odoo_version }} \
+          https://${{ inputs.github_token }}@github.com/odoo/enterprise.git \
+          ${{ github.workspace }}/enterprise
 
     - name: Iniciar Postgres
       shell: bash
@@ -57,6 +71,7 @@ runs:
         options: >-
           --user root
           -v ${{ github.workspace }}:/mnt/extra-addons
+          -v ${{ github.workspace }}/enterprise:/mnt/enterprise
           --network odoo-test-network
           -e HOST=db-postgres
           -e USER=odoo
@@ -72,16 +87,18 @@ runs:
           TAGS_FLAG=""
           if [ -n "$INPUT_TAGS" ]; then TAGS_FLAG="--test-tags=$INPUT_TAGS"; fi
 
+          # Definir addons path (incluye enterprise si existe)
+          ADDONS_PATH="/mnt/extra-addons"
+          if [ -d "/mnt/enterprise" ]; then ADDONS_PATH="$ADDONS_PATH,/mnt/enterprise"; fi
+
           # Definir comando base con parámetros de DB
-          CMD="odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo"
+          CMD="odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo --addons-path=$ADDONS_PATH"
 
           # Si hay ID de Code Climate, envolvemos con coverage
           if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then
              echo "🧪 Corriendo con Coverage..."
-             # --source=/mnt/extra-addons asegura que solo mida tu código
-             python3 -m coverage run --source=/mnt/extra-addons --omit=*/__manifest__.py,*/tests/* /usr/bin/odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo
+             python3 -m coverage run --source=/mnt/extra-addons --omit=*/__manifest__.py,*/tests/* /usr/bin/odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo --addons-path=$ADDONS_PATH
              
-             # Generar XML dentro del volumen montado
              python3 -m coverage xml -o /mnt/extra-addons/coverage.xml
           else
              echo "🚀 Corriendo sin Coverage..."
