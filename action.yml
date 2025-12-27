@@ -116,4 +116,4 @@ runs:
       uses: qltysh/qlty-action/coverage@v2
       with:
         token: ${{ inputs.qlty_coverage_token }}
-        files: /mnt/extra-addons/coverage.xml
+        files: ${{ github.workspace }}/coverage.xml
