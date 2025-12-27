@@ -19,7 +19,7 @@ inputs:
     required: false
     default: ''
   # NUEVOS INPUTS PARA ENTERPRISE
-  github_token:
+  enterprise_deploy_key:
     description: 'GitHub Token con acceso a odoo/enterprise'
     required: false
     default: ''
@@ -37,14 +37,19 @@ runs:
     - name: Crear red Docker
       shell: bash
       run: docker network create odoo-test-network || true
-
+    # 1. Cargamos la llave SSH en el agente
+    - name: Setup SSH Agent
+      if: ${{ inputs.enterprise_deploy_key != '' }}
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ inputs.enterprise_deploy_key }}
     # NUEVO: Clonar Odoo Enterprise
     - name: Clonar Odoo Enterprise
-      if: ${{ inputs.github_token != '' }}
+      if: ${{ inputs.enterprise_deploy_key != '' }}
       shell: bash
       run: |
         git clone --depth 1 --branch ${{ inputs.odoo_version }} \
-          https://${{ inputs.github_token }}@github.com/odoo/enterprise.git \
+          git@github.com:ChromaAgency/odoo-enterprise.git \
           ${{ github.workspace }}/enterprise
 
     - name: Iniciar Postgres
