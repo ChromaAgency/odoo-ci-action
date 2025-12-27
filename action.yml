@@ -1,0 +1,114 @@
+name: 'Odoo Test & Code Climate'
+description: 'Ejecuta tests de Odoo y reporta a Code Climate'
+author: 'Tu Nombre'
+
+inputs:
+  odoo_version:
+    description: 'Versión de Odoo'
+    required: true
+    default: '16.0'
+  modules:
+    description: 'Módulos a probar'
+    required: true
+  pg_version:
+    description: 'Versión de Postgres'
+    required: false
+    default: '14'
+  test_tags:
+    description: 'Tags de test opcionales'
+    required: false
+    default: ''
+  # INPUT PARA CODE CLIMATE
+  cc_reporter_id:
+    description: 'ID del Reporter de Code Climate (CC_TEST_REPORTER_ID)'
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    # 1. Preparar Code Climate (Descargar binario)
+    - name: Setup Code Climate
+      if: ${{ inputs.cc_reporter_id != '' }}
+      shell: bash
+      run: |
+        curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+        chmod +x ./cc-test-reporter
+        ./cc-test-reporter before-build
+
+    # 2. Infraestructura (Red + DB)
+    - name: Crear red Docker
+      shell: bash
+      run: docker network create odoo-test-network || true
+
+    - name: Iniciar Postgres
+      shell: bash
+      run: |
+        docker rm -f db-postgres || true
+        docker run -d --name db-postgres --network odoo-test-network \
+          -e POSTGRES_USER=odoo -e POSTGRES_PASSWORD=odoo -e POSTGRES_DB=postgres \
+          postgres:${{ inputs.pg_version }}
+
+    - name: Esperar a Postgres
+      shell: bash
+      run: until docker exec db-postgres pg_isready -U odoo; do sleep 2; done
+
+    - name: Ajustar permisos
+      shell: bash
+      run: chmod -R 777 .
+
+    # 3. Ejecutar Tests (Generando coverage.xml)
+    - name: Ejecutar Tests Odoo
+      uses: addnab/docker-run-action@v3
+      with:
+        image: odoo:${{ inputs.odoo_version }}
+        options: |
+          --user root
+          -v ${{ github.workspace }}:/mnt/extra-addons
+          --network odoo-test-network
+        env:
+          HOST: db-postgres
+          USER: odoo
+          PASSWORD: odoo
+          INPUT_MODULES: ${{ inputs.modules }}
+          INPUT_TAGS: ${{ inputs.test_tags }}
+          INPUT_CC_ID: ${{ inputs.cc_reporter_id }}
+        run: |
+          # Instalar coverage
+          if [ -n "$INPUT_CC_ID" ]; then pip install coverage; fi
+
+          # Preparar Tags
+          TAGS_FLAG=""
+          if [ -n "$INPUT_TAGS" ]; then TAGS_FLAG="--test-tags=$INPUT_TAGS"; fi
+
+          # Definir comando base
+          CMD="odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test"
+
+          # Si hay ID de Code Climate, envolvemos con coverage
+          if [ -n "$INPUT_CC_ID" ]; then
+             echo "🧪 Corriendo con Coverage..."
+             # --source=/mnt/extra-addons asegura que solo mida tu código
+             python3 -m coverage run --source=/mnt/extra-addons --omit=*/__manifest__.py,*/tests/* /usr/bin/odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test
+             
+             # Generar XML dentro del volumen montado
+             python3 -m coverage xml -o /mnt/extra-addons/coverage.xml
+          else
+             echo "🚀 Corriendo sin Coverage..."
+             $CMD
+          fi
+
+    # 4. Subir a Code Climate (Desde el Host)
+    - name: Upload to Code Climate
+      if: ${{ inputs.cc_reporter_id != '' }}
+      shell: bash
+      env:
+        CC_TEST_REPORTER_ID: ${{ inputs.cc_reporter_id }}
+      run: |
+        echo "🔧 Ajustando rutas en coverage.xml..."
+        # IMPORTANTE: Reemplazamos la ruta de Docker (/mnt/extra-addons/) por nada
+        # para que coincida con la ruta relativa del repo en GitHub.
+        sed -i 's|/mnt/extra-addons/||g' coverage.xml
+
+        echo "📤 Subiendo reporte..."
+        ./cc-test-reporter format-coverage -t coverage.py coverage.xml
+        ./cc-test-reporter upload-coverage
