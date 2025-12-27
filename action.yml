@@ -1,6 +1,6 @@
 name: 'Odoo Test & Code Climate'
 description: 'Ejecuta tests de Odoo y reporta a Code Climate'
-author: 'Tu Nombre'
+author: 'Chroma Agency'
 
 inputs:
   odoo_version:
