@@ -115,9 +115,7 @@ runs:
             echo "🚀 Corriendo sin Coverage..."
             $CMD
           fi
-          echo "ls result:"
-          apt-get update && apt-get install -y tree
-          tree -a -L 3
+  
     
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
