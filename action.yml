@@ -115,6 +115,9 @@ runs:
             echo "🚀 Corriendo sin Coverage..."
             $CMD
           fi
+          echo "ls result:"
+          apt-get update && apt-get install -y tree
+          tree -a -L 3
     
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
@@ -123,7 +126,7 @@ runs:
         path: ${{ github.workspace }}/coverage.xml
         retention-days: 2
     
-    - name: Upload coverage artifacts
+    - name: Upload coverage artifacts .coverage
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
