@@ -106,8 +106,8 @@ runs:
             export COVERAGE_FILE="/mnt/extra-addons/.coverage"
             python3 -m coverage run --source=/mnt/extra-addons --omit=*/__manifest__.py,*/tests/* /usr/bin/odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo --addons-path=$ADDONS_PATH
             python3 -m coverage xml -o /mnt/extra-addons/coverage.xml
-            python3 -m coverage html -o /mnt/extra-addons/coverage.html
-            ls -la /mnt/extra-addons/.coverage /mnt/extra-addons/coverage.xml
+            python3 -m coverage html -d /mnt/extra-addons/coverage-html
+            ls -la /mnt/extra-addons/.coverage /mnt/extra-addons/coverage.xml /mnt/extra-addons/coverage-html/index.html
           else
             echo "🚀 Corriendo sin Coverage..."
             $CMD
@@ -124,8 +124,8 @@ runs:
     - name: Upload coverage artifacts html
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-report
-        path: ${{ github.workspace }}/coverage.html
+        name: coverage-report-html
+        path: ${{ github.workspace }}/coverage-html
         retention-days: 2
         if-no-files-found: error
         include-hidden-files: true
