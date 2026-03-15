@@ -127,6 +127,7 @@ runs:
         path: ${{ github.workspace }}/.coverage
         retention-days: 2
         if-no-files-found: error
+        include-hidden-files: true
 
     - name: Instalar Qlty CLI
       uses: qltysh/qlty-action/install@v2.2.0
