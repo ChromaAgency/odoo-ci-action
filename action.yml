@@ -123,7 +123,7 @@ runs:
         path: ${{ github.workspace }}/coverage.xml
         retention-days: 2
     
-    - name: Upload coverage artifacts
+    - name: Upload coverage artifacts .coverage
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
