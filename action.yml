@@ -126,10 +126,17 @@ runs:
         path: ${{ github.workspace }}/.coverage
         retention-days: 2
 
-    # 4. Subir a Code Climate (Desde el Host)
-    - name: Upload to Code Climate
-      if: ${{ inputs.qlty_coverage_token != '' }}
-      uses: qltysh/qlty-action/coverage@v2.2.0
-      with:
-        token: ${{ inputs.qlty_coverage_token }}
-        files: ${{ github.workspace }}/coverage.xml
+    - name: Instalar Qlty CLI
+      uses: qltysh/qlty-action/install@v2.2.0
+
+    - name: Upload a Qlty (forzar branch ${{ inputs.odoo_version }})
+      env:
+              QLTY_COVERAGE_TOKEN: ${{ inputs.qlty_coverage_token }}
+      shell: bash
+      run: |
+        if [ -z "${QLTY_COVERAGE_TOKEN:-}" ]; then
+          echo "QLTY_COVERAGE_TOKEN no configurado, se omite upload"
+          exit 0
+        fi
+        qlty coverage publish --override-branch ${{ inputs.odoo_version }} --no-validate ${{ github.workspace }}/coverage.xml
+
