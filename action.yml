@@ -90,7 +90,7 @@ runs:
           -e INPUT_QLTY_COVERAGE_TOKEN=${{ inputs.qlty_coverage_token }}
         run: |
           set -e
-
+          apt-get update && apt-get install -y --no-install-recommends git
           if [ -f "/mnt/extra-addons/requirements.txt" ]; then
             echo "📦 Instalando dependencias desde requirements.txt..."
             pip install -r /mnt/extra-addons/requirements.txt --break-system-packages
