@@ -124,7 +124,6 @@ runs:
         name: coverage-report-xml
         path: ${{ github.workspace }}/coverage.xml
         retention-days: 2
-        if-no-files-found: error
 
     - name: Upload coverage artifacts html
       uses: actions/upload-artifact@v4
@@ -132,7 +131,6 @@ runs:
         name: coverage-report-html
         path: ${{ github.workspace }}/coverage-html
         retention-days: 2
-        if-no-files-found: error
         include-hidden-files: true
 
     - name: Instalar Qlty CLI
