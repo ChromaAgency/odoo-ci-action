@@ -91,6 +91,11 @@ runs:
         run: |
           set -e
 
+          if [ -f "/mnt/extra-addons/requirements.txt" ]; then
+            echo "📦 Instalando dependencias desde requirements.txt..."
+            pip install -r /mnt/extra-addons/requirements.txt --break-system-packages
+          fi
+          
           if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then pip install coverage --break-system-packages; fi
 
           TAGS_FLAG=""
