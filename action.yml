@@ -27,6 +27,10 @@ inputs:
     description: 'GitHub Token con acceso a odoo/enterprise'
     required: false
     default: ''
+  submodules_deploy_key:
+    description: 'SSH deploy key opcional para clonar submódulos privados por SSH'
+    required: false
+    default: ''
   # INPUT PARA CODE CLIMATE
   qlty_coverage_token:
     description: 'Token de Code Climate para reportar coverage'
@@ -47,10 +51,12 @@ runs:
       run: docker network create odoo-test-network || true
     # 1. Cargamos la llave SSH en el agente
     - name: Setup SSH Agent
-      if: ${{ inputs.enterprise_deploy_key != '' }}
+      if: ${{ inputs.enterprise_deploy_key != '' || inputs.submodules_deploy_key != '' }}
       uses: webfactory/ssh-agent@v0.8.0
       with:
-        ssh-private-key: ${{ inputs.enterprise_deploy_key }}
+        ssh-private-key: |
+          ${{ inputs.enterprise_deploy_key }}
+          ${{ inputs.submodules_deploy_key }}
     # NUEVO: Clonar Odoo Enterprise
     - name: Clonar Odoo Enterprise
       if: ${{ inputs.enterprise_deploy_key != '' }}
@@ -76,6 +82,33 @@ runs:
       shell: bash
       run: chmod -R 777 .
 
+    - name: Inicializar submódulos (SSH/HTTPS)
+      shell: bash
+      run: |
+        set -e
+        cd "${{ github.workspace }}"
+        git config --global --add safe.directory "${{ github.workspace }}"
+
+        if [ ! -f ".gitmodules" ]; then
+          echo "No hay submódulos en el repositorio"
+          exit 0
+        fi
+
+        mkdir -p ~/.ssh
+        ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null || true
+
+        echo "🔄 Intentando submódulos con URL original (SSH/HTTPS)..."
+        git submodule sync --recursive
+        if git submodule update --init --recursive; then
+          echo "Submódulos actualizados correctamente"
+        else
+          echo "Fallo con URLs originales; reintentando con HTTPS para GitHub..."
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+          git submodule sync --recursive
+          git submodule update --init --recursive
+        fi
+
     # 2. Ejecutar Tests (Generando coverage.xml)
     - name: Ejecutar Tests Odoo
       uses: addnab/docker-run-action@v3
@@ -100,10 +133,6 @@ runs:
             echo "📦 Instalando dependencias desde requirements.txt..."
             python3 -m pip install  -r /mnt/extra-addons/requirements.txt || python3 -m pip install -r /mnt/extra-addons/requirements.txt --break-system-packages
           fi
-          cd /mnt/extra-addons
-          git config --global --add safe.directory /mnt/extra-addons
-
-          git submodule update --init --recursive || echo "No hay submódulos o ya están actualizados"
           if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then python3 -m pip install coverage || python3 -m pip install coverage --break-system-packages; fi
 
           TAGS_FLAG=""
