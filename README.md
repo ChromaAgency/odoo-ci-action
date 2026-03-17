@@ -54,6 +54,7 @@ jobs:
           modules: 'my_module_1,my_module_2'
           pg_version: '15'
           test_tags: '/module_name'
+          extra_addons_path: '/mnt/extra-addons/vendor_addons,/mnt/extra-addons/private_addons'
           enterprise_deploy_key: ${{ secrets.ODOO_ENTERPRISE_DEPLOY_KEY }}
           qlty_coverage_token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
 ```
@@ -66,6 +67,7 @@ jobs:
 | `modules` | Lista de módulos a probar separados por comas | ✅ | - |
 | `pg_version` | Versión de PostgreSQL | ❌ | `14` |
 | `test_tags` | Tags de test opcionales para filtrar tests específicos | ❌ | `''` |
+| `extra_addons_path` | Rutas adicionales para `--addons-path` dentro del contenedor, separadas por comas | ❌ | `''` |
 | `enterprise_deploy_key` | SSH deploy key con acceso a odoo/enterprise | ❌ | `''` |
 | `qlty_coverage_token` | Token de Code Climate/Qlty para reportar cobertura | ❌ | `''` |
 

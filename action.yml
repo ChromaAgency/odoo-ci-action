@@ -18,6 +18,10 @@ inputs:
     description: 'Tags de test opcionales'
     required: false
     default: ''
+  extra_addons_path:
+    description: 'Rutas adicionales para --addons-path dentro del contenedor (separadas por comas)'
+    required: false
+    default: ''
   # NUEVOS INPUTS PARA ENTERPRISE
   enterprise_deploy_key:
     description: 'GitHub Token con acceso a odoo/enterprise'
@@ -87,6 +91,7 @@ runs:
           -e PASSWORD=odoo
           -e INPUT_MODULES=${{ inputs.modules }}
           -e INPUT_TAGS=${{ inputs.test_tags }}
+          -e INPUT_EXTRA_ADDONS_PATH=${{ inputs.extra_addons_path }}
           -e INPUT_QLTY_COVERAGE_TOKEN=${{ inputs.qlty_coverage_token }}
         run: |
           set -e
@@ -103,6 +108,7 @@ runs:
 
           ADDONS_PATH="/mnt/extra-addons"
           if [ -d "/mnt/enterprise" ]; then ADDONS_PATH="$ADDONS_PATH,/mnt/enterprise"; fi
+          if [ -n "$INPUT_EXTRA_ADDONS_PATH" ]; then ADDONS_PATH="$ADDONS_PATH,$INPUT_EXTRA_ADDONS_PATH"; fi
 
           CMD="odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo --addons-path=$ADDONS_PATH"
 
