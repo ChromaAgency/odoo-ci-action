@@ -93,10 +93,10 @@ runs:
           apt-get update && apt-get install -y --no-install-recommends git
           if [ -f "/mnt/extra-addons/requirements.txt" ]; then
             echo "📦 Instalando dependencias desde requirements.txt..."
-            pip install -r /mnt/extra-addons/requirements.txt --break-system-packages
+            python3 -m pip install  -r /mnt/extra-addons/requirements.txt || python3 -m pip install -r /mnt/extra-addons/requirements.txt --break-system-packages
           fi
           
-          if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then pip install coverage --break-system-packages; fi
+          if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then python3 -m pip install coverage || python3 -m pip install coverage --break-system-packages; fi
 
           TAGS_FLAG=""
           if [ -n "$INPUT_TAGS" ]; then TAGS_FLAG="--test-tags=$INPUT_TAGS"; fi
