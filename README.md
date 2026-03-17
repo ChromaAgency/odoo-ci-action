@@ -56,6 +56,7 @@ jobs:
           test_tags: '/module_name'
           extra_addons_path: '/mnt/extra-addons/vendor_addons,/mnt/extra-addons/private_addons'
           enterprise_deploy_key: ${{ secrets.ODOO_ENTERPRISE_DEPLOY_KEY }}
+          submodules_deploy_key: ${{ secrets.ODOO_SUBMODULES_DEPLOY_KEY }}
           qlty_coverage_token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
 ```
 
@@ -69,6 +70,7 @@ jobs:
 | `test_tags` | Tags de test opcionales para filtrar tests específicos | ❌ | `''` |
 | `extra_addons_path` | Rutas adicionales para `--addons-path` dentro del contenedor, separadas por comas | ❌ | `''` |
 | `enterprise_deploy_key` | SSH deploy key con acceso a odoo/enterprise | ❌ | `''` |
+| `submodules_deploy_key` | SSH deploy key opcional para clonar submódulos privados por SSH | ❌ | `''` |
 | `qlty_coverage_token` | Token de Code Climate/Qlty para reportar cobertura | ❌ | `''` |
 
 ## 🔑 Configuración de Secrets
