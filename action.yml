@@ -100,7 +100,8 @@ runs:
             echo "📦 Instalando dependencias desde requirements.txt..."
             python3 -m pip install  -r /mnt/extra-addons/requirements.txt || python3 -m pip install -r /mnt/extra-addons/requirements.txt --break-system-packages
           fi
-          
+          cd /mnt/extra-addons
+          git submodule update --init --recursive || echo "No hay submódulos o ya están actualizados"
           if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then python3 -m pip install coverage || python3 -m pip install coverage --break-system-packages; fi
 
           TAGS_FLAG=""
