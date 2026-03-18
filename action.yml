@@ -14,6 +14,10 @@ inputs:
     description: 'Versión de Postgres'
     required: false
     default: '14'
+  run_coverage:
+    description: 'Indica si se debe ejecutar la cobertura de tests'
+    required: false
+    default: 'True'
   test_tags:
     description: 'Tags de test opcionales'
     required: false
@@ -126,6 +130,7 @@ runs:
           -e INPUT_TAGS=${{ inputs.test_tags }}
           -e INPUT_EXTRA_ADDONS_PATH=${{ inputs.extra_addons_path }}
           -e INPUT_QLTY_COVERAGE_TOKEN=${{ inputs.qlty_coverage_token }}
+          -e RUN_COVERAGE=${{ inputs.run_coverage }}
         run: |
           set -e
           apt-get update && apt-get install -y --no-install-recommends git
@@ -133,7 +138,7 @@ runs:
             echo "📦 Instalando dependencias desde requirements.txt..."
             python3 -m pip install  -r /mnt/extra-addons/requirements.txt || python3 -m pip install -r /mnt/extra-addons/requirements.txt --break-system-packages
           fi
-          if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then python3 -m pip install coverage || python3 -m pip install coverage --break-system-packages; fi
+          if [ "$RUN_COVERAGE" = "True" ]; then python3 -m pip install coverage || python3 -m pip install coverage --break-system-packages; fi
 
           TAGS_FLAG=""
           if [ -n "$INPUT_TAGS" ]; then TAGS_FLAG="--test-tags=$INPUT_TAGS"; fi
@@ -144,7 +149,7 @@ runs:
 
           CMD="odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo --addons-path=$ADDONS_PATH"
 
-          if [ -n "$INPUT_QLTY_COVERAGE_TOKEN" ]; then
+          if [ "$RUN_COVERAGE" = "True" ]; then
             echo "🧪 Corriendo con Coverage..."
             export COVERAGE_FILE="/mnt/extra-addons/.coverage"
             python3 -m coverage run --source=/mnt/extra-addons --omit=*/__manifest__.py,*/tests/* /usr/bin/odoo -i $INPUT_MODULES --test-enable $TAGS_FLAG --stop-after-init --database=test_db --log-level=test --db_host=db-postgres --db_port=5432 --db_user=odoo --db_password=odoo --addons-path=$ADDONS_PATH
